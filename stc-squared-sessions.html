@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Conference Itinerary</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .session-card { transition: all 0.2s ease; }
+        .primary { border-left: 6px solid #000000; }
+        .secondary { border-left: 6px solid #ef4444; }
+    </style>
+</head>
+<body class="pb-20">
+
+    <header class="bg-indigo-900 text-white p-6 sticky top-0 z-50 shadow-lg">
+        <h1 class="text-xl font-bold">Conference Planner</h1>
+        <p class="text-indigo-200 text-sm">Wednesday, March 25, 2026</p>
+        <div id="clock" class="text-xs mt-2 font-mono bg-indigo-800 inline-block px-2 py-1 rounded"></div>
+    </header>
+
+    <main class="max-w-md mx-auto p-4 space-y-6">
+        
+        <div class="flex gap-2 mb-4">
+            <button onclick="filterSessions('all')" class="bg-white border px-4 py-2 rounded-full text-sm font-medium hover:bg-gray-50 active:scale-95 transition">All</button>
+            <button onclick="filterSessions('primary')" class="bg-black text-white px-4 py-2 rounded-full text-sm font-medium active:scale-95 transition">Primary Track</button>
+            <button onclick="filterSessions('secondary')" class="bg-red-500 text-white px-4 py-2 rounded-full text-sm font-medium active:scale-95 transition">Backups</button>
+        </div>
+
+        <div id="schedule" class="space-y-4">
+            </div>
+    </main>
+
+    <div id="next-up-bar" class="fixed bottom-0 left-0 right-0 bg-white border-t p-4 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] hidden">
+        <div class="max-w-md mx-auto flex justify-between items-center">
+            <div>
+                <p class="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Next Session</p>
+                <p id="next-session-name" class="font-semibold text-sm truncate w-48 italic">Finding session...</p>
+            </div>
+            <div id="next-session-loc" class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded text-xs font-bold"></div>
+        </div>
+    </div>
+
+    <script>
+        const sessions = [
+            { time: "08:00 AM", title: "Cybersecurity using AI: Attacking and Defending", room: "MCCoE | Path II", speaker: "John Wagner", type: "primary", timestamp: "2026-03-25T08:00:00" },
+            { time: "08:00 AM", title: "Do More With Less: Power of AI", room: "Guidepoint-Darktrace | Path I", speaker: "Matt Matlock", type: "secondary", timestamp: "2026-03-25T08:00:00" },
+            
+            { time: "09:10 AM", title: "Realities of the AI Wave", room: "SpringNet | Glen I-A", speaker: "Felix Simmons", type: "primary", timestamp: "2026-03-25T09:10:00" },
+            { time: "09:20 AM", title: "Bad Vibes", room: "eSCO | Path III", speaker: "Tyler Drenon & Jesse Thomas", type: "secondary", timestamp: "2026-03-25T09:20:00" },
+            
+            { time: "10:25 AM", title: "Crawl-Walk-Run With an AI Co-Builder", room: "MCCoE | Path II", speaker: "Jonathan Hodges", type: "primary", timestamp: "2026-03-25T10:15:00" },
+            { time: "10:25 AM", title: "From Prompt to Agent: Reusable Tools", room: "eSCO | Path III", speaker: "Kevin Hopkins", type: "secondary", timestamp: "2026-03-25T10:25:00" },
+            
+            { time: "11:20 AM", title: "Build Your Own AI Coworker", room: "Access Point | Scott", speaker: "Joshua Johnson", type: "primary", timestamp: "2026-03-25T11:20:00" },
+            { time: "11:20 AM", title: "Intersections between AI and IP", room: "SpringNet | Glen I-A", speaker: "John Guerra", type: "secondary", timestamp: "2026-03-25T11:20:00" },
+            
+            { time: "12:30 PM", title: "Integrating Snyk and MCP: Developer Security", room: "Guidepoint-Darktrace | Path I", speaker: "Jonathan Chi", type: "primary", timestamp: "2026-03-25T12:30:00" },
+            
+            { time: "01:35 PM", title: "Scaling AI Innovation: Hackathon Principles", room: "SpringNet | Glen I-A", speaker: "Jill Coffer", type: "primary", timestamp: "2026-03-25T13:35:00" },
+            { time: "01:35 PM", title: "SEO & AI: Google's New Search Results", room: "Board Room", speaker: "Sarah-Cortney Chin", type: "secondary", timestamp: "2026-03-25T13:35:00" },
+            
+            { time: "02:45 PM", title: "Building Production Software with AI in 45 Min", room: "Guidepoint-Darktrace | Path I", speaker: "Mica Cooper", type: "primary", timestamp: "2026-03-25T14:45:00" },
+            { time: "02:35 PM", title: "Responsible AI Leadership", room: "Network Advisors | McLeaster", speaker: "Dr. Gbonisola Adetayo", type: "secondary", timestamp: "2026-03-25T14:35:00" }
+        ];
+
+        function renderSessions(filter = 'all') {
+            const container = document.getElementById('schedule');
+            container.innerHTML = '';
+            
+            const filtered = sessions.filter(s => filter === 'all' || s.type === filter);
+            
+            // Sort by time
+            filtered.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+            filtered.forEach(session => {
+                const card = document.createElement('div');
+                card.className = `session-card bg-white p-4 rounded-xl shadow-sm border border-gray-100 ${session.type}`;
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">${session.time}</span>
+                        <span class="text-[10px] uppercase font-bold px-2 py-1 rounded ${session.type === 'primary' ? 'bg-black text-white' : 'bg-red-100 text-red-600'}">
+                            ${session.type}
+                        </span>
+                    </div>
+                    <h3 class="font-bold text-gray-800 leading-tight mb-1">${session.title}</h3>
+                    <p class="text-xs text-gray-500 mb-3">${session.speaker}</p>
+                    <div class="flex items-center text-gray-600">
+                        <i data-lucide="map-pin" class="w-3 h-3 mr-1"></i>
+                        <span class="text-xs font-medium">${session.room}</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        function filterSessions(type) {
+            renderSessions(type);
+        }
+
+        function updateLiveStatus() {
+            const now = new Date();
+            // Since today isn't March 25 yet, we'll display a placeholder or use current date for demo
+            document.getElementById('clock').innerText = now.toLocaleString();
+
+            const futureSessions = sessions
+                .filter(s => new Date(s.timestamp) > now)
+                .sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+            if (futureSessions.length > 0) {
+                document.getElementById('next-up-bar').classList.remove('hidden');
+                document.getElementById('next-session-name').innerText = futureSessions[0].title;
+                document.getElementById('next-session-loc').innerText = futureSessions[0].room.split('|')[1] || futureSessions[0].room;
+            }
+        }
+
+        // Initialize
+        renderSessions();
+        setInterval(updateLiveStatus, 1000);
+        updateLiveStatus();
+    </script>
+</body>
+</html>
